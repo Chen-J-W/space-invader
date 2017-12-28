@@ -1,6 +1,7 @@
 #include "U8glib.h"
 U8GLIB_SSD1306_128X64 u8g(U8G_I2C_OPT_NONE);
- const uint8_t rock_bitmap[] U8G_PROGMEM = {        //make a rock 
+#define setFont_L u8g.setFont(u8g_font_7x13)
+ const uint8_t rock_bitmap[] U8G_PROGMEM = {
   0x86,         // 10000110
   0xfc,          // 11111100
   0xfe,         // 11111110
@@ -8,6 +9,15 @@ U8GLIB_SSD1306_128X64 u8g(U8G_I2C_OPT_NONE);
   0xfe,         // 011111110
   0xfc,         // 11111100
   0x86           // 10000110
+};
+const uint8_t plane_bitmap[] U8G_PROGMEM = {
+  0x86,         // 10000110
+  0xfc,          //11111100
+  0xfe,         // 11111110
+  0xfc,         // 11111100
+  0xfe,         // 011111110
+  0xfc,         // 11111100
+  0x86           //10000110
 };
 const uint8_t snow_bitmap[] U8G_PROGMEM = {
   0x99,
@@ -29,7 +39,7 @@ const uint8_t mon1_bitmap[] U8G_PROGMEM = {
   0x5a,
   0x8e
 };
-const uint8_t mon2_bitmap[] U8G_PROGMEM = {    //make monster1
+const uint8_t mon2_bitmap[] U8G_PROGMEM = {
   0x3c,
   0x75,
   0xf5,
@@ -94,17 +104,232 @@ const uint8_t mon7_bitmap[] U8G_PROGMEM = {
 int rock_x[17]={120,120,120,120,120,120,120,120,120,120,120,120,120,120,120,120,120},rock_y[17]={0,0,7,14,21,48,56,32,40,48,56,0,7,14,21,28,35};     //rock  move
 int snow_x[7]={120,120,128,136,136,128,120},snow_y[7]={0,50,42,34,66,58,50},hitwall[7]={0,0,0,0,0,0,0};     //snow  move
 
-
-int mon_x[55]={0,130,140,150,160,140,120,130,140,130,150,210,180,140,130,120,100,40,60,80,110,50,70,90,130,140,150,160,140,120,130,140,130,150,210,180,140,130,120,110,50,70,90,100,40,60,80,130,140,150,160,110,50,70,90};//54个
+int mon_x[55]={0,130,140,150,160,140,120,130,140,130,150,210,180,140,130,120,100,128,128,128,110,128,128,128,130,140,150,160,140,120,130,140,130,150,210,180,140,130,120,128,128,128,128,128,128,128,128,128,140,150,160,110,128,128,128};//54个
 int mon_y[55]={0,10,20,50,40,10,50,20,40,30,40,10,10,20,30,40,80,64,70,68,-10,0,-20,-30,10,20,50,30,10,30,40,50,30,40,10,10,20,30,40,-10,0,-20,-30,80,64,70,68,10,20,50,40,-10,0,-20,-30};
+int x[34]={1,1,1,1,1,1,2,3,4,5,6,7,8,9,10,11,12,4,4,4,4,4,4,4,4,4,4,4,4,4,5,6,5,6};//点17是头
+int y[34]={30,31,32,33,34,32,32,32,32,32,32,32,32,32,32,32,32,26,27,28,29,30,31,32,33,34,35,36,37,38,30,30,34,34};//点5，6为机翼
+int m[5]={0},n[5]={0};
+int a;
+int dir[6][2]={{3,0},{-3,0},{0,-3},{0,3},{0,0},{0,0}};
+int s=0; //s是第s+1发子弹
+int p[66]={0};
+int read_joy()
+{
+    int x;
+    x=analogRead(A0);
+    if (x>650&&x<750) 
+         { return 0;
+         Serial.println("1");}
+    if (x<400&&x>300) 
+       { return 1;
+         Serial.println("2");}
+    if (x>450&&x<550) 
+        {return 2;
+         Serial.println("3");}
+    if (x>800&&x<900) 
+        {return 3;
+         Serial.println("4");}
+        if(x==0)
+        return 5;
+       else
+      {return 4;
+        Serial.println("0");}
+        
+}
+void shoot()
+{
+  if(a==5)
+ { m[s%4]=x[16];
+  n[s%4]=y[16];
+  s++;}
+  }
+  void zhan()
+{
+   
+for(int i=1;i<=6;i++)
+   {
+    for(int j=0;j<=4;j++)
+    { 
+      if(m[j]-snow_x[i]<=8&&m[j]-snow_x[i]>=0&&n[j]-snow_y[i]<=8&&n[j]-snow_y[i]>=0)
+     { m[j]=0;n[j]=0;p[i]=1;
+     snow_x[i]=-8;snow_y[i]=-8;
+     }
+      }
+    }
+    if(millis()>=40000)
+    {for(int j=0;j<=4;j++)
+    { 
+      if((m[j]-110)*(m[j]-110)+(n[j]-32)*(n[j]-32)<=100)
+     { m[j]=0;n[j]=0;p[63]+=1;}
+      }}
+    
+  
+  for(int i=1;i<=54;i++)
+{
+   for(int j=0;j<=4;j++)
+   {
+      if(m[j]-mon_x[i]<=7&&m[j]-mon_x[i]>=0&&n[j]-mon_y[i]<=7&&n[j]-mon_y[i]>=0)
+     { 
+      m[j]=0;n[j]=0;p[i+6]=1;mon_x[i]=-8;mon_y[i]=-8;
+     }
+    }
+  }
+  }
+  void dead()
+  {
+for(int i=1;i<=6;i++)
+   {
+    for(int j=0;j<=33;j++)
+    { 
+       if(x[j]-snow_x[i]<=7&&x[j]-snow_x[i]>=0&&y[j]-snow_y[i]<=7&&y[j]-snow_y[i]>=0)
+     p[65]=1;
+     
+    }}
+ for(int i=1;i<=13;i++)
+   {
+   if(i==7)
+   i++;
+    for(int j=0;j<=33;j++)
+    { 
+      if(x[j]-rock_x[i]<=6&&x[j]-rock_x[i]>=0&&y[j]-rock_y[i]<=6&&y[j]-rock_y[i]>=1)
+     p[65]=1;
+     
+      }
+    }
+    
+   for(int i=1;i<=54;i++)
+{
+   for(int j=0;j<=33;j++)
+   {
+      if(x[j]-mon_x[i]<=7&&x[j]-mon_x[i]>=0&&y[j]-mon_y[i]<=7&&y[j]-mon_y[i]>=0)
+        p[65]=1;
+     
+    }
+  }
+if(millis()>=40000)
+{for(int j=0;j<=33;j++)
+    { 
+      if((x[j]-110)*(x[j]-110)+(y[j]-32)*(y[j]-32)<=100)
+       p[65]=1;
+      }
+    }
+if(millis()>=44000&&millis()<=46000)
+{for(int j=0;j<=33;j++)
+  {
+    if(y[j]>=0&&y[j]<=4)
+        p[65]=1;
+        if(y[j]>=30&&y[j]<=34)
+        p[65]=1;
+        if(y[j]>=60&&y[j]<=64)
+        p[65]=1;
+    }
+}
+if(millis()>=50000&&millis()<=52000)
+{
+ for(int j=0;j<=33;j++)
+  {
+    if(y[j]>=19&&y[j]<=23)
+        p[65]=1;
+        if(y[j]>=42&&y[j]<=46)
+        p[65]=1;
+  }
+}
+if(millis()>=56000&&millis()<=58000)
+{
+  for(int j=0;j<=33;j++)
+  {
+    if(y[j]>=0&&y[j]<=4)
+        p[65]=1;
+        if(y[j]>=30&&y[j]<=34)
+        p[65]=1;
+        if(y[j]>=60&&y[j]<=64)
+        p[65]=1;
+        }
+}
+        if(millis()>=62000&&millis()<=64000)
+  {
+ for(int j=0;j<=33;j++)
+  {
+    if(y[j]>=19&&y[j]<=23)
+        p[65]=1;
+        if(y[j]>=42&&y[j]<=46)
+        p[65]=1;
+  }
+}
+if(millis()>=68000&&millis()<=70000)
+{
+  for(int j=0;j<=33;j++)
+  {
+    if(y[j]>=0&&y[j]<=4)
+        p[65]=1;
+        if(y[j]>=30&&y[j]<=34)
+        p[65]=1;
+        if(y[j]>=60&&y[j]<=64)
+        p[65]=1;
+        }
+}
+if(millis()>=74000&&millis()<=76000)
+{
+  for(int j=0;j<=33;j++)
+  {
+    if(y[j]>=19&&y[j]<=23)
+        p[65]=1;
+        if(y[j]>=42&&y[j]<=46)
+        p[65]=1;
+  }
+}
+   }
+
+
+
+    
+  void qu()
+  {
+    for(int i=0;i<=4;i++)
+    if(m[i]>=128)
+    m[i]=0;
+    for(int i=0;i<=33;i++)
+    {if(x[i]<=0)
+    x[i]+=128;
+    if(y[i]<=0)
+    y[i]+=64;
+     if(y[i]>=64)
+    y[i]-=128;
+    }
+    }
+    
+void go()
+{
+  a=read_joy();
+  for(int i=0;i<=33;i++)
+  {
+    x[i]+=dir[a][0];
+    y[i]+=dir[a][1];
+  }
+  }
+
 void setup()
 {
   Serial.begin(115200);
   };
 void loop()
 {  
-u8g.firstPage();do{
-if(millis()>=0&&millis()<=20000)             //monsters arise onto OLED  according to the time
+u8g.firstPage();do{setFont_L;
+  if(p[65]==0&&p[63]<=23)
+{if(p[65]==0)
+ {
+ for(int i=0;i<=33;i++)
+ u8g.drawPixel(x[i],y[i]);}
+ for(int i=0;i<=4;i++)
+ {
+  if(m[i]>0)
+  {u8g.drawPixel(m[i],y[i]);
+  m[i]++;}
+  }
+ 
+
+
+if(millis()>=0&&millis()<=20000)
 {
   u8g.drawBitmapP(rock_x[1],rock_y[1], 1, 7, rock_bitmap);
   u8g.drawBitmapP(rock_x[2],rock_y[2], 1, 7, rock_bitmap);
@@ -114,141 +339,111 @@ if(millis()>=0&&millis()<=20000)             //monsters arise onto OLED  accordi
   u8g.drawBitmapP(rock_x[6],rock_y[6], 1, 7, rock_bitmap);
 }
 if(millis()>=3000&&millis()<=20000)
-{ 
-  u8g.drawBitmapP(snow_x[1],snow_y[1], 1, 8,snow_bitmap);
-  u8g.drawBitmapP(snow_x[2],snow_y[2], 1, 8,snow_bitmap);
-  u8g.drawBitmapP(snow_x[3],snow_y[3], 1, 8,snow_bitmap);
+{ for(int i=1;i<=3;i++)
+   {if(p[i]==0)
+  u8g.drawBitmapP(snow_x[i],snow_y[i], 1, 8,snow_bitmap);}
 }
 if(millis()>=4000&&millis()<=27000)
-{
-  u8g.drawBitmapP(mon_x[1],mon_y[1], 1, 8,mon1_bitmap);
-  u8g.drawBitmapP(mon_x[2],mon_y[2], 1, 8,mon1_bitmap);
-  u8g.drawBitmapP(mon_x[3],mon_y[3], 1, 8,mon1_bitmap);
-  u8g.drawBitmapP(mon_x[4],mon_y[4], 1, 8,mon1_bitmap);
+{ for(int i=1;i<=4;i++)
+  {if(p[i+6]==0)
+  u8g.drawBitmapP(mon_x[i],mon_y[i], 1, 8,mon1_bitmap);}
 }
 if(millis()>=6000&&millis()<=20000)
-{
-  u8g.drawBitmapP(mon_x[5],mon_y[5], 1, 9,mon2_bitmap);
-  u8g.drawBitmapP(mon_x[6],mon_y[6], 1, 9,mon2_bitmap);
-  u8g.drawBitmapP(mon_x[7],mon_y[7], 1, 9,mon2_bitmap);
-  u8g.drawBitmapP(mon_x[8],mon_y[8], 1, 9,mon2_bitmap);
+{for(int i=5;i<=8;i++)
+  {if(p[i+6]==0)
+  u8g.drawBitmapP(mon_x[i],mon_y[i], 1, 9,mon2_bitmap);}
 }
 if(millis()>=8000&&millis()<=21500)
-{
-  u8g.drawBitmapP(mon_x[9],mon_y[9], 1, 8,mon3_bitmap);
-  u8g.drawBitmapP(mon_x[10],mon_y[10], 1, 8,mon3_bitmap);
-  u8g.drawBitmapP(mon_x[11],mon_y[11], 1, 8,mon3_bitmap);
+{for(int i=9;i<=11;i++)
+  {if(p[i+6]==0)
+  u8g.drawBitmapP(mon_x[i],mon_y[i], 1, 8,mon3_bitmap);}
 }
 if(millis()>=10000&&millis()<=23500)
-{
-  u8g.drawBitmapP(mon_x[12],mon_y[12], 1, 8,mon4_bitmap);
-  u8g.drawBitmapP(mon_x[13],mon_y[13], 1, 8,mon4_bitmap);
-  u8g.drawBitmapP(mon_x[14],mon_y[14], 1, 8,mon4_bitmap);
-  u8g.drawBitmapP(mon_x[15],mon_y[15], 1, 8,mon4_bitmap);
+{for(int i=12;i<=15;i++)
+  {if(p[i+6]==0)
+  u8g.drawBitmapP(mon_x[i],mon_y[i], 1, 8,mon4_bitmap);}
 }
 if(millis()>=12000&&millis()<=24500)
-{
-  u8g.drawBitmapP(mon_x[16],mon_y[16], 1, 8,mon5_bitmap);
-  u8g.drawBitmapP(mon_x[17],mon_y[17], 1, 8,mon5_bitmap);
-  u8g.drawBitmapP(mon_x[18],mon_y[18], 1, 8,mon5_bitmap);
-  u8g.drawBitmapP(mon_x[19],mon_y[19], 1, 8,mon5_bitmap);
+{for(int i=16;i<=19;i++)
+  {if(p[i+6]==0)
+  u8g.drawBitmapP(mon_x[i],mon_y[i], 1, 8,mon5_bitmap);}
 }
 if(millis()>=13500&&millis()<=26500)
-{
-  u8g.drawBitmapP(mon_x[20],mon_y[20], 1, 9,mon6_bitmap);
-  u8g.drawBitmapP(mon_x[21],mon_y[21], 1, 9,mon6_bitmap);
-  u8g.drawBitmapP(mon_x[22],mon_y[22], 1, 9,mon6_bitmap);
-  u8g.drawBitmapP(mon_x[23],mon_y[23], 1, 9,mon6_bitmap);
+{for(int i=20;i<=23;i++)
+  {if(p[i+6]==0)
+  u8g.drawBitmapP(mon_x[i],mon_y[i], 1, 9,mon6_bitmap);}
 }
 if(millis()>=14500&&millis()<=29500)
-{
-  u8g.drawBitmapP(snow_x[4],snow_y[4], 1, 8,snow_bitmap);
-  u8g.drawBitmapP(snow_x[5],snow_y[5], 1, 8,snow_bitmap);
-  u8g.drawBitmapP(snow_x[6],snow_y[6], 1, 8,snow_bitmap);
+{for(int i=4;i<=5;i++)
+  {if(p[i]==0)
+  u8g.drawBitmapP(snow_x[i],snow_y[i], 1, 8,snow_bitmap);}
 }
 if(millis()>=16500&&millis()<=39500)
-{
-  u8g.drawBitmapP(mon_x[24],mon_y[24], 1, 8,mon1_bitmap);
-  u8g.drawBitmapP(mon_x[25],mon_y[25], 1, 8,mon1_bitmap);
-  u8g.drawBitmapP(mon_x[26],mon_y[26], 1, 8,mon1_bitmap);
-  u8g.drawBitmapP(mon_x[27],mon_y[27], 1, 8,mon1_bitmap);
+{for(int i=24;i<=27;i++)
+  {if(p[i+6]==0)
+  u8g.drawBitmapP(mon_x[i],mon_y[i], 1, 8,mon1_bitmap);}
 }
 if(millis()>=18000&&millis()<=38000)
 {
-  u8g.drawBitmapP(rock_x[7],rock_y[7], 1, 7, rock_bitmap);
-  u8g.drawBitmapP(rock_x[8],rock_y[8], 1, 7, rock_bitmap);
+  
   u8g.drawBitmapP(rock_x[9],rock_y[9], 1, 7, rock_bitmap);
   u8g.drawBitmapP(rock_x[10],rock_y[10], 1, 7, rock_bitmap);
 }
 if(millis()>=20000&&millis()<=34000)
-{
-  u8g.drawBitmapP(mon_x[28],mon_y[28], 1, 9,mon2_bitmap);
-  u8g.drawBitmapP(mon_x[29],mon_y[29], 1, 9,mon2_bitmap);
-  u8g.drawBitmapP(mon_x[30],mon_y[30], 1, 9,mon2_bitmap);
-  u8g.drawBitmapP(mon_x[31],mon_y[31], 1, 9,mon2_bitmap);
+{for(int i=28;i<=31;i++)
+  {if(p[i+6]==0)
+  u8g.drawBitmapP(mon_x[i],mon_y[i], 1, 9,mon2_bitmap);}
+ 
 }
 if(millis()>=22000&&millis()<=42000)
-{
-  u8g.drawBitmapP(rock_x[11],rock_y[11], 1, 7, rock_bitmap);
+{u8g.drawBitmapP(rock_x[11],rock_y[11], 1, 7, rock_bitmap);
   u8g.drawBitmapP(rock_x[12],rock_y[12], 1, 7, rock_bitmap);
   u8g.drawBitmapP(rock_x[13],rock_y[13], 1, 7, rock_bitmap);
-  u8g.drawBitmapP(rock_x[14],rock_y[14], 1, 7, rock_bitmap);
-  u8g.drawBitmapP(rock_x[15],rock_y[15], 1, 7, rock_bitmap);
-  u8g.drawBitmapP(rock_x[16],rock_y[16], 1, 7, rock_bitmap);
+  
 }
 if(millis()>=24000&&millis()<=48000)
-{
-  u8g.drawBitmapP(mon_x[32],mon_y[32], 1, 8,mon3_bitmap);
-  u8g.drawBitmapP(mon_x[33],mon_y[33], 1, 8,mon3_bitmap);
-  u8g.drawBitmapP(mon_x[34],mon_y[34], 1, 8,mon3_bitmap);
+{for(int i=32;i<=34;i++)
+  {if(p[i+6]==0)
+  u8g.drawBitmapP(mon_x[i],mon_y[i], 1, 8,mon3_bitmap);}
+  
 }
 if(millis()>=25000&&millis()<=37500)
-{
-  u8g.drawBitmapP(mon_x[35],mon_y[35], 1, 8,mon4_bitmap);
-  u8g.drawBitmapP(mon_x[36],mon_y[36], 1, 8,mon4_bitmap);
-  u8g.drawBitmapP(mon_x[37],mon_y[37], 1, 8,mon4_bitmap);
-  u8g.drawBitmapP(mon_x[38],mon_y[38], 1, 8,mon4_bitmap);
+{for(int i=35;i<=38;i++)
+  {if(p[i+6]==0)
+  u8g.drawBitmapP(mon_x[i],mon_y[i], 1, 8,mon4_bitmap);}
 }
 if(millis()>=27000&&millis()<=39500)
-{
-  u8g.drawBitmapP(mon_x[39],mon_y[39], 1, 9,mon6_bitmap);
-  u8g.drawBitmapP(mon_x[40],mon_y[40], 1, 9,mon6_bitmap);
-  u8g.drawBitmapP(mon_x[41],mon_y[41], 1, 9,mon6_bitmap);
-  u8g.drawBitmapP(mon_x[42],mon_y[42], 1, 9,mon6_bitmap);
+{for(int i=39;i<=42;i++)
+  {if(p[i+6]==0)
+  u8g.drawBitmapP(mon_x[i],mon_y[i], 1, 9,mon6_bitmap);}
 }
 if(millis()>=30000&&millis()<=42500)
-{
-  u8g.drawBitmapP(mon_x[43],mon_y[43], 1, 8,mon5_bitmap);
-  u8g.drawBitmapP(mon_x[44],mon_y[44], 1, 8,mon5_bitmap);
-  u8g.drawBitmapP(mon_x[45],mon_y[45], 1, 8,mon5_bitmap);
-  u8g.drawBitmapP(mon_x[46],mon_y[46], 1, 8,mon5_bitmap);
+{for(int i=43;i<=46;i++)
+  {if(p[i+6]==0)
+  u8g.drawBitmapP(mon_x[i],mon_y[i], 1, 8,mon5_bitmap);}
 }
 if(millis()>=32000&&millis()<=55000)
-{
-  u8g.drawBitmapP(mon_x[47],mon_y[47], 1, 8,mon1_bitmap);
-  u8g.drawBitmapP(mon_x[48],mon_y[48], 1, 8,mon1_bitmap);
-  u8g.drawBitmapP(mon_x[49],mon_y[49], 1, 8,mon1_bitmap);
-  u8g.drawBitmapP(mon_x[50],mon_y[50], 1, 8,mon1_bitmap);
+{for(int i=47;i<=50;i++)
+  {if(p[i+6]==0)
+  u8g.drawBitmapP(mon_x[i],mon_y[i], 1, 8,mon1_bitmap);}
 }
 if(millis()>=34000&&millis()<=46500)
-{
-  u8g.drawBitmapP(mon_x[51],mon_y[51], 1, 8,mon7_bitmap);
-  u8g.drawBitmapP(mon_x[52],mon_y[52], 1, 8,mon7_bitmap);
-  u8g.drawBitmapP(mon_x[53],mon_y[53], 1, 8,mon7_bitmap);
-  u8g.drawBitmapP(mon_x[54],mon_y[54], 1, 8,mon7_bitmap);
+{for(int i=51;i<=54;i++)
+  {if(p[i+6]==0)
+  u8g.drawBitmapP(mon_x[i],mon_y[i], 1, 8,mon7_bitmap);}
 }
-if(millis()>=40000)                               //boss emerges(UFO)
-{
-   u8g.drawEllipse(100,32 ,10,30);   //UFO   boss
-   u8g.drawDisc(110,32, 10);
+if(millis()>=40000)
+{if(p[63]<=20)
+   {u8g.drawEllipse(100,32 ,10,30);   //UFO   boss
+   u8g.drawDisc(110,32, 10);}
 }
-if(millis()>=42000&&millis()<=44000)          //warning for attack
+if(millis()>=42000&&millis()<=44000)
 {
   u8g.drawDisc(88,2,2);
   u8g.drawDisc(88,32,2);
   u8g.drawDisc(88,62,2);
 }
-if(millis()>=44000&&millis()<=46000)             //attack ,lasting for 2 seconds
+if(millis()>=44000&&millis()<=46000)
 {
   u8g.drawBox(0,0,90,4);
   u8g.drawBox(0,30,90,4);
@@ -308,8 +503,19 @@ if(millis()>=74000&&millis()<=76000)
   u8g.drawBox(0,19,90,4);
   u8g.drawBox(0,42,90,4);
 }
- }while(u8g.nextPage());
-  if(millis()>=0&&millis()<=20000)     for(int k=1;k<=6;k++)rock_x[k]--;   //move control
+}
+else if(p[65]==1)
+{
+  u8g.setPrintPos(32,32);
+  u8g.print("GAME OVER");
+  }
+  else if(p[63]>=23)
+  {u8g.setPrintPos(32,32);
+   u8g.print("YOU WIN");}
+
+}while(u8g.nextPage());
+
+  if(millis()>=0&&millis()<=20000)     for(int k=1;k<=6;k++)rock_x[k]--;
   if(millis()>=3000&&millis()<=20000)  for(int k=1;k<=3;k++)snow_x[k]--;
   if(millis()>=4000&&millis()<=27000)  for(int k=1;k<=4;k++)mon_x[k]--;
   if(millis()>=6000&&millis()<=20000)  for(int k=5;k<=8;k++)mon_x[k]-=2;
@@ -317,7 +523,7 @@ if(millis()>=74000&&millis()<=76000)
   if(millis()>=10000&&millis()<=23500) for(int k=12;k<=15;k++)mon_x[k]-=2;
   if(millis()>=12000&&millis()<=24500) for(int k=16;k<=19;k++)mon_y[k]-=2;
   if(millis()>=13500&&millis()<=26500) for(int k=20;k<=23;k++)mon_y[k]+=2;
-  if(millis()>=14500&&millis()<=29500) for(int k=4;k<=6;k++)snow_x[k]--;
+  if(millis()>=14500&&millis()<=29500) for(int k=4;k<=5;k++)snow_x[k]--;
   if(millis()>=16500&&millis()<=39500) for(int k=24;k<=27;k++)mon_x[k]--;
   if(millis()>=18000&&millis()<=38000) for(int k=7;k<=10;k++)rock_x[k]--;
   if(millis()>=20000&&millis()<=34000) for(int k=28;k<=31;k++)mon_x[k]-=2;
@@ -332,8 +538,15 @@ for(int k=1;k<=3;k++)
    {if(snow_y[k]==0||snow_y[k]==60)hitwall[k]++;
      if(hitwall[k]%2==0)snow_y[k]+=2;
      else snow_y[k]-=2;}
-for(int k=4;k<=6;k++)
+for(int k=4;k<=5;k++)
    {if(snow_y[k]==0||snow_y[k]==60)hitwall[k]++;
      if(hitwall[k]%2==0)snow_y[k]-=2;
      else snow_y[k]+=2;}
+     read_joy();
+     shoot();
+     zhan();
+     dead();
+     go();
+     qu();
+
      }
